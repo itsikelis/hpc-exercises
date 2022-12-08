@@ -11,7 +11,12 @@
 #include <zlib.h>
 
 // interface for LAPACK routines.
-//#include <>
+// #include <lapack.h>
+
+extern "C"
+{
+	extern int dsyev_(char *, char *, int *, double *, int *, double *, double *, int *, int *);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // helpers
@@ -224,16 +229,6 @@ int main(int argc, char **argv)
 	// double *cov_minus_mean = new (std::nothrow) double[image_columns*image_columns];
 	// assert(cov_minus_mean!=NULL);
 
-	// Subtract column mean from standardised matrix.
-	for (int i = 0; i < image_columns; i++)
-	{
-		for (int j = 0; j < image_rows; j++)
-		{
-			// cov_minus_mean[(i * image_rows) + j] = A[(i * image_rows) + j] - AMean[i];
-		}
-	}
-
-	// Transpose
 	for (int j = 0; j < image_columns; j++)
 	{
 		for (int k = 0; k < image_columns; k++)
@@ -259,8 +254,8 @@ int main(int argc, char **argv)
 
 	// see also for the interface to dsyev_():
 	// http://www.netlib.org/lapack/explore-html/d2/d8a/group__double_s_yeigen_ga442c43fca5493590f8f26cf42fed4044.html#ga442c43fca5493590f8f26cf42fed4044
-	char jobz = '?'; // TODO: compute both, eigenvalues and orthonormal eigenvectors
-	char uplo = '?'; // TODO: how did you compute the (symmetric) covariance matrix?
+	char jobz = 'V'; // TODO: compute both, eigenvalues and orthonormal eigenvectors
+	char uplo = 'L'; // TODO: how did you compute the (symmetric) covariance matrix?
 	int info, lwork;
 
 	double *W = new (std::nothrow) double[image_columns]; // eigenvalues
@@ -273,7 +268,12 @@ int main(int argc, char **argv)
 	// workspace (cheap call)
 	lwork = -1;
 
-	// TODO: call dsyev here
+	dsyev_(&jobz, &uplo, &image_columns, C, &image_columns, W, work, &lwork, &info);
+
+	if (info != 0)
+	{
+		std::cout << "Something went wrong." << std::endl;
+	}
 
 	lwork = (int)work[0];
 	delete[] work;
@@ -283,7 +283,12 @@ int main(int argc, char **argv)
 	assert(work != NULL);
 
 	// second call to dsyev_(), eigenvalues and eigenvectors are computed here
-	// TODO: call dsyev here
+	dsyev_(&jobz, &uplo, &image_columns, C, &image_columns, W, work, &lwork, &info);
+
+	if (info != 0)
+	{
+		std::cout << "Something went wrong." << std::endl;
+	}
 
 	t_elapsed += omp_get_wtime();
 	std::cout << "DSYEV TIME=" << t_elapsed << " seconds\n";
@@ -300,6 +305,9 @@ int main(int argc, char **argv)
 		for (int j = 0; j < npc; j++)
 		{
 			// TODO: compute the principal components
+			// Multiply normalised matrix with #npc first eigenvectors (stored in C matrix).
+			// FIXME - Seg Fault here.
+			PCReduced[i*image_columns + j] = A[i*image_columns + j] * C[i*image_columns + j];
 		}
 	}
 
