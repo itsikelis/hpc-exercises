@@ -306,8 +306,7 @@ int main(int argc, char **argv)
 		{
 			// TODO: compute the principal components
 			// Multiply normalised matrix with #npc first eigenvectors (stored in C matrix).
-			// FIXME - Seg Fault here.
-			PCReduced[i*image_columns + j] = A[i*image_columns + j] * C[i*image_columns + j];
+			PCReduced[i*npc + j] = A[i*npc + j] * C[i*npc + j];
 		}
 	}
 
