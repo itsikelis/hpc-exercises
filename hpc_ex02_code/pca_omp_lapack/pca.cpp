@@ -225,9 +225,6 @@ int main(int argc, char **argv)
 	assert(C != NULL);
 
 	// TODO: Compute covariance matrix here
-	// Create two temporary matrices to calculate covariance matrix.
-	// double *cov_minus_mean = new (std::nothrow) double[image_columns*image_columns];
-	// assert(cov_minus_mean!=NULL);
 
 	for (int j = 0; j < image_columns; j++)
 	{
@@ -241,7 +238,9 @@ int main(int argc, char **argv)
 			}
 
 			C[j * image_rows + k] = (1 / (image_rows - 1)) * sum;
+			// std::cout << C[j*image_rows + k];
 		}
+		// std::cout << std::endl;
 	}
 
 	t_elapsed += omp_get_wtime();
@@ -306,7 +305,7 @@ int main(int argc, char **argv)
 		{
 			// TODO: compute the principal components
 			// Multiply normalised matrix with #npc first eigenvectors (stored in C matrix).
-			PCReduced[i*npc + j] = A[i*npc + j] * C[i*npc + j];
+			PCReduced[i*npc + j] = A[i*npc + j] * C[i*npc + j];	
 		}
 	}
 
@@ -330,7 +329,8 @@ int main(int argc, char **argv)
 		{
 			// TODO: Reconstruct image here.  Don't forget to denormalize.  The
 			// dimension of the reconstructed image is m x n (rows x columns).
-			// Z[i*image_columns + j] = ...
+			// Z[i*image_columns + j] = [ PCReduced * C' ] 
+			Z[i*image_columns + j] = PCReduced[i*image_columns + j];
 		}
 	}
 
