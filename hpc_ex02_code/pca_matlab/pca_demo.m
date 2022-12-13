@@ -12,7 +12,7 @@ A = double(rgb2gray(I));
 % first stage: construction of the covariance matrix
 [m n] = size(A);
 AMean = mean(A);
-AStd  = std(A);
+AStd  = std(A)
 B     = (A-repmat(AMean,[m 1]))./repmat(AStd,[m 1]);
 C     = cov(B);
 

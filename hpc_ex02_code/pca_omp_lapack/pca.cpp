@@ -85,22 +85,38 @@ double calc_column_mean(double *column, int column_length)
 	}
 
 	// Return mean.
-	return sum / column_length;
+	return sum / (column_length - 1);
 }
 
+// Calculate standard deviation of a feature column.
 double calc_column_std(double *column, double mean, int column_length)
 {
-	// Initialise sum variable.
 	double sum = 0;
+	double diff = 0;
 
-	// Sum all values' deviation from mean squared.
+	// Sum all values' deviation from mean.
 	for (int i = 0; i < column_length; i++)
 	{
-		sum += pow(column[i] - mean, 2);
+		diff = column[i] - mean;
+		sum += pow(diff, 2);
 	}
 
+	// Divide sum by N (column length) to get the variance.
+	double var = sum / column_length;
+
 	// Return standard deviation.
-	return sum / column_length;
+	return sqrt(var);
+}
+
+// Function to find covariance.
+double covariance(float arr_x[], float arr_y[], int n, double mean_arr_x, double mean_arr_y)
+{
+	double sum = 0;
+	for (int i = 0; i < n; i++)
+	{
+		sum = sum + (arr_x[i] - mean_arr_x) * (arr_y[i] - mean_arr_y);
+	}
+	return sum / (n - 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -192,13 +208,13 @@ int main(int argc, char **argv)
 	assert(AMean != NULL);
 	assert(AStd != NULL);
 
-	for (int i = 0; i < image_columns; i++)
+	for (int i = 0; i < image_rows; i++)
 	{
 		// TODO: Make these two an openMP task.
 		// Calculate mean of each column.
-		AMean[i] = calc_column_mean(&A[i * image_rows], image_rows);
+		AMean[i] = calc_column_mean(&A[i * image_columns], image_rows);
 
-		AStd[i] = calc_column_std(&A[i * image_rows], AMean[i], image_rows);
+		AStd[i] = calc_column_std(&A[i * image_columns], AMean[i], image_rows);
 	}
 	t_elapsed += omp_get_wtime();
 	std::cout << "MEAN/STD TIME=" << t_elapsed << " seconds\n";
@@ -207,12 +223,12 @@ int main(int argc, char **argv)
 	///////////////////////////////////////////////////////////////////////////
 	t_elapsed = -omp_get_wtime();
 
-	for (int i = 0; i < image_columns; i++)
+	for (int i = 0; i < image_rows; i++)
 	{
-		for (int j = 0; j < image_rows; j++)
+		for (int j = 0; j < image_columns; j++)
 		{
 			// Standardise (normalise) data: Subtract mean and divide by standard deviation.
-			A[(i * image_rows) + j] = (A[(i * image_rows) + j] - AMean[i]) / AStd[i];
+			A[(i * image_columns) + j] = (A[(i * image_columns) + j] - AMean[i]) / AStd[i];
 		}
 	}
 	t_elapsed += omp_get_wtime();
@@ -230,14 +246,7 @@ int main(int argc, char **argv)
 	{
 		for (int k = 0; k < image_columns; k++)
 		{
-			double sum = 0;
-			// Calculate sum.
-			for (int i = 0; i < image_rows; i++)
-			{
-				sum += (A[j * image_rows + i] - AMean[j]) * (A[k * image_rows + i] - AMean[k]);
-			}
 
-			C[j * image_rows + k] = (1 / (image_rows - 1)) * sum;
 			// std::cout << C[j*image_rows + k];
 		}
 		// std::cout << std::endl;
@@ -305,7 +314,7 @@ int main(int argc, char **argv)
 		{
 			// TODO: compute the principal components
 			// Multiply normalised matrix with #npc first eigenvectors (stored in C matrix).
-			PCReduced[i*npc + j] = A[i*npc + j] * C[i*npc + j];	
+			PCReduced[i * npc + j] = A[i * npc + j] * C[i * npc + j];
 		}
 	}
 
@@ -329,8 +338,8 @@ int main(int argc, char **argv)
 		{
 			// TODO: Reconstruct image here.  Don't forget to denormalize.  The
 			// dimension of the reconstructed image is m x n (rows x columns).
-			// Z[i*image_columns + j] = [ PCReduced * C' ] 
-			Z[i*image_columns + j] = PCReduced[i*image_columns + j];
+			// Z[i*image_columns + j] = [ PCReduced * C' ]
+			Z[i * image_columns + j] = PCReduced[i * image_columns + j];
 		}
 	}
 
