@@ -109,14 +109,23 @@ double calc_column_std(double *column, double mean, int column_length)
 }
 
 // Function to find covariance.
-double covariance(float arr_x[], float arr_y[], int n, double mean_arr_x, double mean_arr_y)
+double calc_covariance(double *arr_x, double *arr_y, int column_length, double mean_arr_x, double mean_arr_y)
 {
-	double sum = 0;
-	for (int i = 0; i < n; i++)
+	double sum1 = 0;
+	double sum2 = 0;
+
+	for (int i = 0; i < column_length; i++)
 	{
-		sum = sum + (arr_x[i] - mean_arr_x) * (arr_y[i] - mean_arr_y);
+		std::cout << i;
+		std::cout << "Hi1";
+		sum1 += (arr_x[i] - mean_arr_x);
+		std::cout << "Hi2" << std::endl;
+		sum2 += (arr_y[i] - mean_arr_y);
+
+		// std::cout << sum << std::endl;
 	}
-	return sum / (n - 1);
+
+	return sum1/ (column_length - 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -242,14 +251,22 @@ int main(int argc, char **argv)
 
 	// TODO: Compute covariance matrix here
 
-	for (int j = 0; j < image_columns; j++)
+	// pixel_{i,j} = I[i*image_columns + j], where 0 <= i < image_rows and 0 <= j < image_columns.
+	for (int i = 0; i < image_rows * image_columns; i++)
 	{
-		for (int k = 0; k < image_columns; k++)
+		for (int j = 0; j < image_columns * image_rows; j++)
 		{
-
-			// std::cout << C[j*image_rows + k];
+			// Covariance matrix is symmetric so we calculate only the lower triangular part.
+			if (j <= i)
+			{
+				std::cout << i << " , " << j << std::endl;
+				C[(i * image_columns * image_rows) + (j * (image_columns * image_rows))] = calc_covariance(&A[i * image_columns], &A[j * image_columns], image_rows, AMean[i], AMean[j]);
+			}
+			else
+			{
+				break;
+			}
 		}
-		// std::cout << std::endl;
 	}
 
 	t_elapsed += omp_get_wtime();
