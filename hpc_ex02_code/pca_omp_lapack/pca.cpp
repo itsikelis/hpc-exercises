@@ -111,21 +111,14 @@ double calc_column_std(double *column, double mean, int column_length)
 // Function to find covariance.
 double calc_covariance(double *arr_x, double *arr_y, int column_length, double mean_arr_x, double mean_arr_y)
 {
-	double sum1 = 0;
-	double sum2 = 0;
+	double sum = 0;
 
 	for (int i = 0; i < column_length; i++)
 	{
-		std::cout << i;
-		std::cout << "Hi1";
-		sum1 += (arr_x[i] - mean_arr_x);
-		std::cout << "Hi2" << std::endl;
-		sum2 += (arr_y[i] - mean_arr_y);
-
-		// std::cout << sum << std::endl;
+		sum += (arr_x[i] - mean_arr_x) * (arr_y[i] - mean_arr_y);
 	}
 
-	return sum1/ (column_length - 1);
+	return sum / column_length;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -217,13 +210,13 @@ int main(int argc, char **argv)
 	assert(AMean != NULL);
 	assert(AStd != NULL);
 
-	for (int i = 0; i < image_rows; i++)
+	for (int i = 0; i < image_columns; i++)
 	{
 		// TODO: Make these two an openMP task.
 		// Calculate mean of each column.
-		AMean[i] = calc_column_mean(&A[i * image_columns], image_rows);
+		AMean[i] = calc_column_mean(&A[i * image_rows], image_rows);
 
-		AStd[i] = calc_column_std(&A[i * image_columns], AMean[i], image_rows);
+		AStd[i] = calc_column_std(&A[i * image_rows], AMean[i], image_rows);
 	}
 	t_elapsed += omp_get_wtime();
 	std::cout << "MEAN/STD TIME=" << t_elapsed << " seconds\n";
@@ -237,8 +230,14 @@ int main(int argc, char **argv)
 		for (int j = 0; j < image_columns; j++)
 		{
 			// Standardise (normalise) data: Subtract mean and divide by standard deviation.
-			A[(i * image_columns) + j] = (A[(i * image_columns) + j] - AMean[i]) / AStd[i];
+			A[(i * image_columns) + j] = (A[(i * image_columns) + j] - AMean[j]) / AStd[j];
+
+			std::cout << A[(i * image_columns) + j] << "\t";
 		}
+
+		std::cout << std::endl;
+		std::cout << std::endl;
+		std::cout << std::endl;
 	}
 	t_elapsed += omp_get_wtime();
 	std::cout << "NORMAL. TIME=" << t_elapsed << " seconds\n";
@@ -252,21 +251,25 @@ int main(int argc, char **argv)
 	// TODO: Compute covariance matrix here
 
 	// pixel_{i,j} = I[i*image_columns + j], where 0 <= i < image_rows and 0 <= j < image_columns.
-	for (int i = 0; i < image_rows * image_columns; i++)
+	for (int i = 0; i < image_columns; i++)
 	{
-		for (int j = 0; j < image_columns * image_rows; j++)
+		for (int j = 0; j < image_columns; j++)
 		{
 			// Covariance matrix is symmetric so we calculate only the lower triangular part.
 			if (j <= i)
 			{
-				std::cout << i << " , " << j << std::endl;
-				C[(i * image_columns * image_rows) + (j * (image_columns * image_rows))] = calc_covariance(&A[i * image_columns], &A[j * image_columns], image_rows, AMean[i], AMean[j]);
+				// std::cout << i << " , " << j << std::endl;
+				auto cov = calc_covariance(&A[i * image_rows], &A[j * image_rows], image_rows, 0, 0);
+				// std::cout << cov << std::endl;
+				C[(i * image_columns) + j] = cov;
+				// std::cout << C[(i * image_columns) + (j * image_columns)] << " ";
 			}
 			else
 			{
 				break;
 			}
 		}
+		// std::cout << std::endl;
 	}
 
 	t_elapsed += omp_get_wtime();
@@ -314,6 +317,13 @@ int main(int argc, char **argv)
 	{
 		std::cout << "Something went wrong." << std::endl;
 	}
+
+	// Print eigenvalues.
+	// for (int i = 0; i < image_columns; i++)
+	// {
+	// 	std::cout << W[i] << " ";
+	// }
+	// std::cout << std::endl;
 
 	t_elapsed += omp_get_wtime();
 	std::cout << "DSYEV TIME=" << t_elapsed << " seconds\n";
