@@ -225,19 +225,20 @@ int main(int argc, char **argv)
 	///////////////////////////////////////////////////////////////////////////
 	t_elapsed = -omp_get_wtime();
 
-	for (int i = 0; i < image_rows; i++)
+	for (int i = 0; i < image_columns; i++)
 	{
-		for (int j = 0; j < image_columns; j++)
+		for (int j = 0; j < image_rows; j++)
 		{
-			// Standardise (normalise) data: Subtract mean and divide by standard deviation.
-			A[(i * image_columns) + j] = (A[(i * image_columns) + j] - AMean[j]) / AStd[j];
+			// Standardise (normalise) data: for each element in row i of A, subtract mean of column i and divide by standard deviation of column i.
+			A[(i * image_rows) + j] = (A[(i * image_rows) + j] - AMean[i]) / AStd[i];
 
-			std::cout << A[(i * image_columns) + j] << "\t";
+			// Print all row (feature) elements.
+			// std::cout << A[(i * image_rows) + j] << "\t";
 		}
 
-		std::cout << std::endl;
-		std::cout << std::endl;
-		std::cout << std::endl;
+		// std::cout << std::endl;
+		// std::cout << std::endl;
+		// std::cout << std::endl;
 	}
 	t_elapsed += omp_get_wtime();
 	std::cout << "NORMAL. TIME=" << t_elapsed << " seconds\n";
@@ -258,18 +259,15 @@ int main(int argc, char **argv)
 			// Covariance matrix is symmetric so we calculate only the lower triangular part.
 			if (j <= i)
 			{
-				// std::cout << i << " , " << j << std::endl;
 				auto cov = calc_covariance(&A[i * image_rows], &A[j * image_rows], image_rows, 0, 0);
-				// std::cout << cov << std::endl;
+
 				C[(i * image_columns) + j] = cov;
-				// std::cout << C[(i * image_columns) + (j * image_columns)] << " ";
 			}
 			else
 			{
 				break;
 			}
 		}
-		// std::cout << std::endl;
 	}
 
 	t_elapsed += omp_get_wtime();
@@ -283,7 +281,7 @@ int main(int argc, char **argv)
 	// see also for the interface to dsyev_():
 	// http://www.netlib.org/lapack/explore-html/d2/d8a/group__double_s_yeigen_ga442c43fca5493590f8f26cf42fed4044.html#ga442c43fca5493590f8f26cf42fed4044
 	char jobz = 'V'; // TODO: compute both, eigenvalues and orthonormal eigenvectors
-	char uplo = 'L'; // TODO: how did you compute the (symmetric) covariance matrix?
+	char uplo = 'U'; // TODO: how did you compute the (symmetric) covariance matrix?
 	int info, lwork;
 
 	double *W = new (std::nothrow) double[image_columns]; // eigenvalues
@@ -319,11 +317,11 @@ int main(int argc, char **argv)
 	}
 
 	// Print eigenvalues.
-	// for (int i = 0; i < image_columns; i++)
-	// {
-	// 	std::cout << W[i] << " ";
-	// }
-	// std::cout << std::endl;
+	for (int i = 0; i < image_columns; i++)
+	{
+		std::cout << W[i] << " ";
+	}
+	std::cout << std::endl;
 
 	t_elapsed += omp_get_wtime();
 	std::cout << "DSYEV TIME=" << t_elapsed << " seconds\n";
